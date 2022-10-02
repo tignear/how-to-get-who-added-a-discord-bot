@@ -1,4 +1,4 @@
-# Discord OAuth2 Example Express
+# How to get who added a discord bot
 
 ## Security
 - [x] OAuth2 CSRF
