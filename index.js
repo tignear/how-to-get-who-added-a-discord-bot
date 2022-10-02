@@ -154,7 +154,7 @@ async function callback_success(req, res) {
     return;
   }
   // prevent OAuth CSRF
-  if (session_state !== queryState) {
+  if (session_state !== query_state) {
     res.status(400).send("invalid state");
     return;
   }
