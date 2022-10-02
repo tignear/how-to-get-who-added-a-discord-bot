@@ -3,6 +3,7 @@ const session = require("express-session");
 const crypto = require("crypto");
 const fetch = require("node-fetch");
 const helmet = require("helmet");
+const { PermissionFlagsBits } = require("discord-api-types/v8");
 require('dotenv').config();
 
 /**
@@ -12,7 +13,7 @@ const OAUTH2_ENDPOINT = "https://discord.com/api/oauth2";
 const OAUTH2_AUTHORIZATION_ENDPOINT = OAUTH2_ENDPOINT + "/authorize";
 const OAUTH2_TOKEN_ENDPOINT = OAUTH2_ENDPOINT + "/token";
 const OAUTH2_CURRENT_AUTHORIZATION_ENDPOINT = OAUTH2_ENDPOINT + "/@me";
-const { CLIENT_ID, REDIRECT_URI, CLIENT_SECRET, SESSION_SECRET, SERVER_PORT, DEBUG } = process.env;
+const { CLIENT_ID, REDIRECT_URI, CLIENT_SECRET, SESSION_SECRET, SERVER_PORT } = process.env;
 const DISALLOWED_FETCH_DEST = [
   "audio",
   "audioworklet",
@@ -41,6 +42,7 @@ const DISALLOWED_FETCH_MODE = [
   "same-origin",
   "websocket",
 ];
+const PERMISSIONS = (PermissionFlagsBits.SendMessages | PermissionFlagsBits.ViewChannel | PermissionFlagsBits.Connect | PermissionFlagsBits.ReadMessageHistory | PermissionFlagsBits.SendMessagesInThreads).toString();
 function build_url(endpoint, parameters) {
   return new URL("?" + new URLSearchParams([...Object.entries(parameters)]).toString(), endpoint).toString();
 }
@@ -88,12 +90,12 @@ app.use(session({
 }));
 
 app.get('/', (_req, res) => {
-  res.send('<a href="/login"> login </a>');
+  res.send('<a href="/add"> add </a>');
 });
 
-const SCOPE = ["identify", "email"];
+const SCOPE = ["identify", "bot"];
 
-app.get('/login', (req, res) => {
+app.get('/add', (req, res) => {
   function validate_fetch_metadata(req) {
     const meta = get_fetch_metadata(req);
     if (!meta) {
@@ -123,7 +125,7 @@ app.get('/login', (req, res) => {
     response_type: "code",
     scope: SCOPE.join(" "),
     redirect_uri: REDIRECT_URI,
-    prompt: ["none"].join(" "),
+    permissions: PERMISSIONS,
     state,
   });
   req.session.state = state;
@@ -175,7 +177,9 @@ async function callback_success(req, res) {
   }
   const token_response_data = await token_response.json();
   const { access_token, scope } = token_response_data;
-  if (!eq_set(new Set(scope.split(" ")), new Set(SCOPE))) {
+  const requiredScope = new Set(SCOPE);
+  requiredScope.delete("bot");
+  if (!eq_set(new Set(scope.split(" ")), requiredScope)) {
     res.status(400).send("insufficient granted scope");
     return;
   }
