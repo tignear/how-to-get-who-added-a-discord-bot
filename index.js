@@ -132,10 +132,10 @@ app.get('/add', (req, res) => {
   res.redirect(302, url);
 });
 async function callback_success(req, res) {
-  const { state: sessionState } = req.session;
-  const { state: queryState, code } = req.query;
+  const { state: session_state } = req.session;
+  const { state: query_state, code } = req.query;
 
-  if (queryState == null || code == null) {
+  if (query_state == null || code == null) {
     res.status(400).send("insufficient query parameter");
     return;
   }
@@ -154,7 +154,7 @@ async function callback_success(req, res) {
     return;
   }
   // prevent OAuth CSRF
-  if (sessionState !== queryState) {
+  if (session_state !== queryState) {
     res.status(400).send("invalid state");
     return;
   }
@@ -177,9 +177,9 @@ async function callback_success(req, res) {
   }
   const token_response_data = await token_response.json();
   const { access_token, scope } = token_response_data;
-  const requiredScope = new Set(SCOPE);
-  requiredScope.delete("bot");
-  if (!eq_set(new Set(scope.split(" ")), requiredScope)) {
+  const required_scope = new Set(SCOPE);
+  required_scope.delete("bot");
+  if (!eq_set(new Set(scope.split(" ")), required_scope)) {
     res.status(400).send("insufficient granted scope");
     return;
   }
